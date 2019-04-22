@@ -1,139 +1,94 @@
 (** * Induction: Proof by Induction *)
- 
 
-(** The next line imports all of our definitions from the
-    previous chapter. *)
+(** Before getting started, we need to import all of our
+    definitions from the previous chapter: *)
 
-Require Export Basics.
+From LF Require Export Basics.
 
-(** For it to work, you need to use [coqc] to compile [Basics.v]
-    into [Basics.vo].  (This is like making a .class file from a .java
-    file, or a .o file from a .c file.)
-  
-    Here are two ways to compile your code:
-  
-     - CoqIDE:
-   
-         Open [Basics.v].
-         In the "Compile" menu, click on "Compile Buffer".
-   
-     - Command line:
-   
-         Run [coqc Basics.v]
-    *)
+(** For the [Require Export] to work, Coq needs to be able to
+    find a compiled version of [Basics.v], called [Basics.vo], in a directory
+    associated with the prefix [LF].  This file is analogous to the [.class]
+    files compiled from [.java] source files and the [.o] files compiled from
+    [.c] files.
 
-(* ###################################################################### *)
-(** * Naming Cases *)
+    First create a file named [_CoqProject] containing the following line
+    (if you obtained the whole volume "Logical Foundations" as a single
+    archive, a [_CoqProject] should already exist and you can skip this step):
 
-(** The fact that there is no explicit command for moving from
-    one branch of a case analysis to the next can make proof scripts
-    rather hard to read.  In larger proofs, with nested case analyses,
-    it can even become hard to stay oriented when you're sitting with
-    Coq and stepping through the proof.  (Imagine trying to remember
-    that the first five subgoals belong to the inner case analysis and
-    the remaining seven cases are what remains of the outer one...)
-    Disciplined use of indentation and comments can help, but a better
-    way is to use the [Case] tactic. *)
+      [-Q . LF]
 
-(* [Case] is not built into Coq: we need to define it ourselves.
-    There is no need to understand how it works -- you can just skip
-    over the definition to the example that follows.  It uses some
-    facilities of Coq that we have not discussed -- the string
-    library (just for the concrete syntax of quoted strings) and the
-    [Ltac] command, which allows us to declare custom tactics.  Kudos
-    to Aaron Bohannon for this nice hack! *)
+    This maps the current directory ("[.]", which contains [Basics.v],
+    [Induction.v], etc.) to the prefix (or "logical directory") "[LF]".
+    PG and CoqIDE read [_CoqProject] automatically, so they know to where to
+    look for the file [Basics.vo] corresponding to the library [LF.Basics].
 
-Require String. Open Scope string_scope.
+    Once [_CoqProject] is thus created, there are various ways to build
+    [Basics.vo]:
 
-Ltac move_to_top x :=
-  match reverse goal with
-  | H : _ |- _ => try move x after H
-  end.
+     - In Proof General: The compilation can be made to happen automatically
+       when you submit the [Require] line above to PG, by setting the emacs
+       variable [coq-compile-before-require] to [t].
 
-Tactic Notation "assert_eq" ident(x) constr(v) :=
-  let H := fresh in
-  assert (x = v) as H by reflexivity;
-  clear H.
+     - In CoqIDE: Open [Basics.v]; then, in the "Compile" menu, click
+       on "Compile Buffer".
 
-Tactic Notation "Case_aux" ident(x) constr(name) :=
-  first [
-    set (x := name); move_to_top x
-  | assert_eq x name; move_to_top x
-  | fail 1 "because we are working on a different case" ].
+     - From the command line: Generate a [Makefile] using the [coq_makefile]
+       utility, that comes installed with Coq (if you obtained the whole
+       volume as a single archive, a [Makefile] should already exist
+       and you can skip this step):
 
-Tactic Notation "Case" constr(name) := Case_aux Case name.
-Tactic Notation "SCase" constr(name) := Case_aux SCase name.
-Tactic Notation "SSCase" constr(name) := Case_aux SSCase name.
-Tactic Notation "SSSCase" constr(name) := Case_aux SSSCase name.
-Tactic Notation "SSSSCase" constr(name) := Case_aux SSSSCase name.
-Tactic Notation "SSSSSCase" constr(name) := Case_aux SSSSSCase name.
-Tactic Notation "SSSSSSCase" constr(name) := Case_aux SSSSSSCase name.
-Tactic Notation "SSSSSSSCase" constr(name) := Case_aux SSSSSSSCase name.
-(** Here's an example of how [Case] is used.  Step through the
-   following proof and observe how the context changes. *)
+         [coq_makefile -f _CoqProject *.v -o Makefile]
 
-Theorem andb_true_elim1 : forall b c : bool,
-  andb b c = true -> b = true.
-Proof.
-  intros b c H.
-  destruct b.
-  Case "b = true".  (* <----- here *)
-    reflexivity.
-  Case "b = false".  (* <---- and here *)
-    rewrite <- H. 
-    reflexivity.  
-Qed.
+       Note: You should rerun that command whenever you add or remove Coq files
+       to the directory.
 
-(** [Case] does something very straightforward: It simply adds a
-    string that we choose (tagged with the identifier "Case") to the
-    context for the current goal.  When subgoals are generated, this
-    string is carried over into their contexts.  When the last of
-    these subgoals is finally proved and the next top-level goal
-    becomes active, this string will no longer appear in the context
-    and we will be able to see that the case where we introduced it is
-    complete.  Also, as a sanity check, if we try to execute a new
-    [Case] tactic while the string left by the previous one is still
-    in the context, we get a nice clear error message.
-    For nested case analyses (e.g., when we want to use a [destruct]
-    to solve a goal that has itself been generated by a [destruct]),
-    there is an [SCase] ("subcase") tactic. *)
+       Then you can compile [Basics.v] by running [make] with the corresponding
+       [.vo] file as a target:
 
-(** **** Exercise: 2 stars (andb_true_elim2) *)
-(** Prove [andb_true_elim2], marking cases (and subcases) when
-    you use [destruct]. *)
+         [make Basics.vo]
 
-Theorem andb_true_elim2 : forall b c : bool,
-  andb b c = true -> c = true.
-Proof.
-  (* SOLUTION: *)
-  intros b c H.
-  destruct c.
-  Case "c = true".
-    reflexivity.
-  Case "c = false".
-    rewrite <- H.
-    destruct b.
-    SCase "b = true".
-      reflexivity.
-    SCase "b = false".
-      reflexivity.  Qed.
-(** [] *)
+       All files in the directory can be compiled by giving no arguments:
 
-(** There are no hard and fast rules for how proofs should be
-    formatted in Coq -- in particular, where lines should be broken
-    and how sections of the proof should be indented to indicate their
-    nested structure.  However, if the places where multiple subgoals
-    are generated are marked with explicit [Case] tactics placed at
-    the beginning of lines, then the proof will be readable almost no
-    matter what choices are made about other aspects of layout.
-    This is a good place to mention one other piece of (possibly
-    obvious) advice about line lengths.  Beginning Coq users sometimes
-    tend to the extremes, either writing each tactic on its own line
-    or entire proofs on one line.  Good style lies somewhere in the
-    middle.  In particular, one reasonable convention is to limit
-    yourself to 80-character lines.  Lines longer than this are hard
-    to read and can be inconvenient to display and print.  Many
-    editors have features that help enforce this. *)
+         [make]
+
+       Under the hood, [make] uses the Coq compiler, [coqc].  You can also
+       run [coqc] directly:
+
+         [coqc -Q . LF Basics.v]
+
+       But [make] also calculates dependencies between source files to compile
+       them in the right order, so [make] should generally be prefered over
+       explicit [coqc].
+
+    If you have trouble (e.g., if you get complaints about missing
+    identifiers later in the file), it may be because the "load path"
+    for Coq is not set up correctly.  The [Print LoadPath.] command
+    may be helpful in sorting out such issues.
+
+    In particular, if you see a message like
+
+        [Compiled library Foo makes inconsistent assumptions over
+        library Bar]
+
+    check whether you have multiple installations of Coq on your machine.
+    It may be that commands (like [coqc]) that you execute in a terminal
+    window are getting a different version of Coq than commands executed by
+    Proof General or CoqIDE.
+
+    - Another common reason is that the library [Bar] was modified and
+      recompiled without also recompiling [Foo] which depends on it.  Recompile
+      [Foo], or everything if too many files are affected.  (Using the third
+      solution above: [make clean; make].)
+
+    One more tip for CoqIDE users: If you see messages like [Error:
+    Unable to locate library Basics], a likely reason is
+    inconsistencies between compiling things _within CoqIDE_ vs _using
+    [coqc] from the command line_.  This typically happens when there
+    are two incompatible versions of [coqc] installed on your
+    system (one associated with CoqIDE, and one associated with [coqc]
+    from the terminal).  The workaround for this situation is
+    compiling using CoqIDE only (i.e. choosing "make" from the menu),
+    and avoiding using [coqc] directly at all. *)
 
 (* ###################################################################### *)
 (** * Proof by Induction *)
