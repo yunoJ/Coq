@@ -1,0 +1,31 @@
+<<<<<<< HEAD
+#########################################################################
+                           SOFTWARE FOUNDATIONS
+#########################################################################
+
+This directory contains both Coq scripts (.v files) and more readable
+HTML files for the Software Foundations electronic textbook.
+
+  - Preface.v or Preface.html
+    The place to start reading, including details on how to install
+    required software
+
+  - index.html
+    The book's cover page and navigation starting point
+
+  - deps.html 
+    Overview of the ordering of chapters
+
+  - LICENSE
+    Explanation of how these files may be redistributed
+=======
+Learning Coq from Software Foundations.
+
+New .v file will be uploaded whenever I finish a chapter.
+
+Below are discriptions for my coq environment.
+-Coq version: 8.9.0
+-running on: coqide
+-installed with: opam
+-machine: ubuntu 18.04
+>>>>>>> 12dc326855e9718ad5555b69880ad2b8fb35d394
